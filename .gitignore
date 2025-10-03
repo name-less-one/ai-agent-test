@@ -20,3 +20,7 @@ target/
 
 .DS_Store
 account_flatdata.txt
+
+.classpath
+.project
+.settings/
