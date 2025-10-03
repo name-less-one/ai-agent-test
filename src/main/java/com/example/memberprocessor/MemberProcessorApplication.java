@@ -4,6 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -17,32 +18,12 @@ public class MemberProcessorApplication {
         SpringApplication.run(MemberProcessorApplication.class, args);
     }
 
-    @Component
-    public static class FileProcessor implements CommandLineRunner {
+    @Service
+    public static class MemberFileService {
 
-        private static final String OUTPUT_FILE = "account_flatdata.txt";
         private static final int TARGET_LENGTH = 20;
 
-        @Override
-        public void run(String... args) throws Exception {
-            if (args.length < 1) {
-                System.out.println("使用方法: java -jar member-processor.jar <入力ファイルパス>");
-                System.exit(1);
-            }
-
-            String inputFilePath = args[0];
-            Path outputPath = Paths.get(OUTPUT_FILE);
-
-            if (Files.exists(outputPath)) {
-                System.out.println("出力ファイルが既に存在するため、終了します。");
-                System.exit(0);
-            }
-
-            processFile(inputFilePath, OUTPUT_FILE);
-            System.out.println("処理が完了しました。");
-        }
-
-        private void processFile(String inputFilePath, String outputFilePath) throws IOException {
+        public void processFile(String inputFilePath, String outputFilePath) throws IOException {
             Path inputPath = Paths.get(inputFilePath);
             
             if (!Files.exists(inputPath)) {
@@ -80,7 +61,7 @@ public class MemberProcessorApplication {
             }
         }
 
-        private String padToLength(String memberNumber, int targetLength) {
+        public String padToLength(String memberNumber, int targetLength) {
             if (memberNumber.length() >= targetLength) {
                 return memberNumber.substring(0, targetLength);
             }
@@ -90,6 +71,37 @@ public class MemberProcessorApplication {
                 sb.append(' ');
             }
             return sb.toString();
+        }
+    }
+
+    @Component
+    @org.springframework.context.annotation.Profile("!test")
+    public static class FileProcessor implements CommandLineRunner {
+
+        private static final String OUTPUT_FILE = "account_flatdata.txt";
+        private final MemberFileService memberFileService;
+
+        public FileProcessor(MemberFileService memberFileService) {
+            this.memberFileService = memberFileService;
+        }
+
+        @Override
+        public void run(String... args) throws Exception {
+            if (args.length < 1) {
+                System.out.println("使用方法: java -jar member-processor.jar <入力ファイルパス>");
+                System.exit(1);
+            }
+
+            String inputFilePath = args[0];
+            Path outputPath = Paths.get(OUTPUT_FILE);
+
+            if (Files.exists(outputPath)) {
+                System.out.println("出力ファイルが既に存在するため、終了します。");
+                System.exit(0);
+            }
+
+            memberFileService.processFile(inputFilePath, OUTPUT_FILE);
+            System.out.println("処理が完了しました。");
         }
     }
 }
